@@ -1,0 +1,196 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono-family);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-terminal: var(--terminal-bg);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(0.985 0.002 250);
+  --foreground: oklch(0.18 0.02 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 255);
+  --primary: oklch(0.64 0.19 40);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.006 250);
+  --secondary-foreground: oklch(0.25 0.02 255);
+  --muted: oklch(0.955 0.006 250);
+  --muted-foreground: oklch(0.5 0.02 255);
+  --accent: oklch(0.95 0.012 250);
+  --accent-foreground: oklch(0.22 0.02 255);
+  --destructive: oklch(0.577 0.245 27.325);
+  --success: oklch(0.6 0.16 150);
+  --warning: oklch(0.75 0.16 75);
+  --info: oklch(0.6 0.15 245);
+  --border: oklch(0.91 0.008 250);
+  --input: oklch(0.91 0.008 250);
+  --ring: oklch(0.64 0.19 40);
+  --chart-1: oklch(0.64 0.19 40);
+  --chart-2: oklch(0.6 0.16 150);
+  --chart-3: oklch(0.6 0.15 245);
+  --chart-4: oklch(0.7 0.15 300);
+  --chart-5: oklch(0.75 0.16 75);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.97 0.004 250);
+  --sidebar-foreground: oklch(0.25 0.02 255);
+  --sidebar-primary: oklch(0.64 0.19 40);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.93 0.01 250);
+  --sidebar-accent-foreground: oklch(0.2 0.02 255);
+  --sidebar-border: oklch(0.91 0.008 250);
+  --sidebar-ring: oklch(0.64 0.19 40);
+  --terminal-bg: #0c1016;
+  --terminal-fg: #d7dde6;
+}
+
+.dark {
+  --background: oklch(0.165 0.012 255);
+  --foreground: oklch(0.94 0.008 250);
+  --card: oklch(0.205 0.014 255);
+  --card-foreground: oklch(0.94 0.008 250);
+  --popover: oklch(0.22 0.014 255);
+  --popover-foreground: oklch(0.94 0.008 250);
+  --primary: oklch(0.7 0.18 42);
+  --primary-foreground: oklch(0.16 0.02 40);
+  --secondary: oklch(0.26 0.014 255);
+  --secondary-foreground: oklch(0.94 0.008 250);
+  --muted: oklch(0.25 0.014 255);
+  --muted-foreground: oklch(0.7 0.015 255);
+  --accent: oklch(0.27 0.016 255);
+  --accent-foreground: oklch(0.96 0.006 250);
+  --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.76 0.16 150);
+  --warning: oklch(0.82 0.15 80);
+  --info: oklch(0.72 0.13 240);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.7 0.18 42);
+  --chart-1: oklch(0.7 0.18 42);
+  --chart-2: oklch(0.76 0.16 150);
+  --chart-3: oklch(0.72 0.13 240);
+  --chart-4: oklch(0.72 0.15 300);
+  --chart-5: oklch(0.82 0.15 80);
+  --sidebar: oklch(0.185 0.013 255);
+  --sidebar-foreground: oklch(0.88 0.01 250);
+  --sidebar-primary: oklch(0.7 0.18 42);
+  --sidebar-primary-foreground: oklch(0.16 0.02 40);
+  --sidebar-accent: oklch(0.255 0.015 255);
+  --sidebar-accent-foreground: oklch(0.97 0.005 250);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.7 0.18 42);
+  --terminal-bg: #0a0d12;
+  --terminal-fg: #d7dde6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+@layer components {
+  .prose-lesson {
+    @apply text-[0.95rem] leading-7 text-foreground;
+  }
+  .prose-lesson h2 {
+    @apply mt-8 mb-3 text-xl font-semibold tracking-tight;
+  }
+  .prose-lesson h3 {
+    @apply mt-6 mb-2 text-lg font-semibold;
+  }
+  .prose-lesson p {
+    @apply my-3;
+  }
+  .prose-lesson ul {
+    @apply my-3 list-disc pl-6 space-y-1;
+  }
+  .prose-lesson ol {
+    @apply my-3 list-decimal pl-6 space-y-1;
+  }
+  .prose-lesson a {
+    @apply text-primary underline underline-offset-4;
+  }
+  .prose-lesson code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-foreground;
+  }
+  .prose-lesson pre {
+    @apply my-4 overflow-x-auto rounded-lg border bg-[var(--terminal-bg)] p-4 text-[0.85rem] leading-6 text-[var(--terminal-fg)];
+  }
+  .prose-lesson pre code {
+    @apply bg-transparent p-0 text-inherit;
+  }
+  .prose-lesson table {
+    @apply my-4 w-full border-collapse overflow-hidden rounded-lg text-sm;
+  }
+  .prose-lesson th {
+    @apply border-b bg-muted/60 px-3 py-2 text-left font-semibold;
+  }
+  .prose-lesson td {
+    @apply border-b px-3 py-2 align-top;
+  }
+  .prose-lesson blockquote {
+    @apply my-4 rounded-r-lg border-l-4 border-primary bg-primary/5 px-4 py-2 text-foreground;
+  }
+  .prose-lesson strong {
+    @apply font-semibold;
+  }
+}
+
+.xterm .xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: #2b3340 transparent;
+}

@@ -1,0 +1,15 @@
+export const badges = [
+  { slug: "linux-beginner", name: "Linux Beginner", description: "Completed your first lesson.", icon: "sprout", criteria: { type: "lessons_completed", count: 1 }, xpBonus: 10 },
+  { slug: "command-explorer", name: "Command Explorer", description: "Used 25 different commands in the terminal.", icon: "compass", criteria: { type: "distinct_commands", count: 25 }, xpBonus: 25 },
+  { slug: "file-manager", name: "File Manager", description: "Completed the Linux File System module.", icon: "folder-tree", criteria: { type: "module_completed", module: "file-system" }, xpBonus: 30 },
+  { slug: "permission-master", name: "Permission Master", description: "Completed the File Permissions module.", icon: "shield-check", criteria: { type: "module_completed", module: "file-permissions" }, xpBonus: 30 },
+  { slug: "user-administrator", name: "User Administrator", description: "Completed the Users and Groups module.", icon: "users", criteria: { type: "module_completed", module: "users-groups" }, xpBonus: 30 },
+  { slug: "networking-explorer", name: "Networking Explorer", description: "Completed the Networking module.", icon: "network", criteria: { type: "module_completed", module: "networking" }, xpBonus: 30 },
+  { slug: "bash-programmer", name: "Bash Programmer", description: "Completed the Shell Scripting module.", icon: "file-code", criteria: { type: "module_completed", module: "shell-scripting" }, xpBonus: 30 },
+  { slug: "challenge-champion", name: "Challenge Champion", description: "Solved 5 practice challenges.", icon: "trophy", criteria: { type: "challenges_passed", count: 5 }, xpBonus: 50 },
+  { slug: "root-of-all", name: "Advanced Admin", description: "Solved an advanced challenge.", icon: "crown", criteria: { type: "challenges_passed", count: 1, difficulty: "ADVANCED" }, xpBonus: 40 },
+  { slug: "quiz-whiz", name: "Quiz Whiz", description: "Passed 3 quizzes.", icon: "brain", criteria: { type: "quizzes_passed", count: 3 }, xpBonus: 30 },
+  { slug: "on-fire", name: "On Fire", description: "Learned 7 days in a row.", icon: "flame", criteria: { type: "streak", days: 7 }, xpBonus: 50 },
+  { slug: "terminal-veteran", name: "Terminal Veteran", description: "Ran 500 commands.", icon: "terminal", criteria: { type: "commands_run", count: 500 }, xpBonus: 50 },
+  { slug: "linux-expert", name: "Linux Expert", description: "Completed every learning module.", icon: "award", criteria: { type: "all_modules" }, xpBonus: 100 },
+];

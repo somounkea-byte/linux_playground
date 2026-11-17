@@ -1,0 +1,13 @@
+export { LinuxEnvironment, type CompletionResult, type ExecuteOptions } from "./terminal";
+export { createDefaultState, ensureBinaries, DEFAULT_PATH, type CreateEnvOptions } from "./state";
+export { evaluateChecks, evaluateCheck, checkSchema, checksSchema, CHECK_TYPE_LABELS, type Check, type CheckResult } from "./checks";
+export { ALL_COMMANDS, COMMAND_REGISTRY } from "./commands";
+export type { CommandDef, CommandCategory } from "./commands/types";
+export { VirtualFileSystem, normalizePath } from "./filesystem";
+export { applyChmod, describeMode, formatMode, modeToOctal, modeToSymbolic, canAccess } from "./permissions";
+export { groupsOf, findUser, findGroup } from "./users";
+export { REPOSITORY } from "./packages";
+export { listeningSockets } from "./networking";
+export { mountTable } from "./storage";
+export { memoryStats } from "./processes";
+export * from "./types";

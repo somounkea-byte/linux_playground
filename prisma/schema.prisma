@@ -1,0 +1,604 @@
+// Linux Playground database schema (PostgreSQL)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- identity
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+model User {
+  id             String    @id @default(cuid())
+  /// Firebase Authentication UID (null for local development accounts)
+  firebaseUid    String?   @unique
+  email          String    @unique
+  name           String
+  role           Role      @default(STUDENT)
+  /// scrypt hash, only used when AUTH_PROVIDER=local. Never plain text.
+  passwordHash   String?
+  isActive       Boolean   @default(true)
+  /// Incremented to invalidate all existing sessions of the user.
+  sessionVersion Int       @default(0)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  studentProfile   StudentProfile?
+  teacherProfile   TeacherProfile?
+  environments     VirtualEnvironment[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  authoredExercises Exercise[]         @relation("ExerciseAuthor")
+  authoredQuizzes  Quiz[]             @relation("QuizAuthor")
+  reviewedSubmissions ExerciseSubmission[] @relation("SubmissionReviewer")
+
+  @@index([role])
+}
+
+model StudentProfile {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teacherId        String?
+  teacher          TeacherProfile? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  xp               Int       @default(0)
+  level            Int       @default(1)
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastActiveDate   DateTime? @db.Date
+  commandsRun      Int       @default(0)
+  distinctCommands String[]  @default([])
+  terminalFontSize Int       @default(14)
+  terminalFont     String    @default("JetBrains Mono")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  progress        StudentProgress[]
+  activities      StudentActivity[]
+  xpTransactions  StudentXPTransaction[]
+  badges          StudentBadge[]
+  submissions     ExerciseSubmission[]
+  quizAttempts    QuizAttempt[]
+  assignments     AssignmentStudent[]
+
+  @@index([teacherId])
+  @@index([xp])
+}
+
+model TeacherProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Students join a teacher's class with this code.
+  inviteCode  String   @unique
+  department  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  students    StudentProfile[]
+  assignments Assignment[]
+}
+
+// ---------------------------------------------------------------- content
+
+model LearningModule {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  icon        String   @default("terminal")
+  order       Int
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons Lesson[]
+  quizzes Quiz[]
+
+  @@index([order])
+}
+
+model Lesson {
+  id               String   @id @default(cuid())
+  moduleId         String
+  module           LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  slug             String
+  title            String
+  summary          String
+  /// Markdown lesson body
+  content          String
+  /// [{ command, explanation }] commands to try in the embedded terminal
+  practice         Json     @default("[]")
+  /// Optional grading checks that must pass before the lesson can be completed
+  checks           Json     @default("[]")
+  order            Int
+  xpReward         Int      @default(20)
+  estimatedMinutes Int      @default(10)
+  isPublished      Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  progress StudentProgress[]
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, order])
+}
+
+model CommandReference {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String
+  description String
+  syntax      String
+  options     Json     @default("[]")
+  examples    Json     @default("[]")
+  permissions String?
+  package     String?
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ExerciseKind {
+  CHALLENGE
+  EXERCISE
+}
+
+model Exercise {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  kind         ExerciseKind @default(CHALLENGE)
+  title        String
+  difficulty   Difficulty
+  /// Learning module slug this exercise belongs to
+  category     String
+  summary      String
+  scenario     String
+  objectives   String[]     @default([])
+  instructions String
+  /// Commands run as root to prepare the initial environment
+  setupScript  String       @default("")
+  xpReward     Int          @default(50)
+  hints        String[]     @default([])
+  solution     String
+  isPublished  Boolean      @default(true)
+  authorId     String?
+  author       User?        @relation("ExerciseAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  tasks       ExerciseTask[]
+  assignments Assignment[]
+  submissions ExerciseSubmission[]
+
+  @@index([kind, difficulty])
+  @@index([category])
+}
+
+model ExerciseTask {
+  id          String   @id @default(cuid())
+  exerciseId  String
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  order       Int
+  description String
+  /// A grading check (see src/lib/linux-engine/checks.ts)
+  check       Json
+  hint        String?
+  points      Int      @default(1)
+
+  @@index([exerciseId, order])
+}
+
+model Assignment {
+  id           String   @id @default(cuid())
+  exerciseId   String
+  exercise     Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title        String
+  instructions String?
+  dueAt        DateTime?
+  xpReward     Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  students    AssignmentStudent[]
+  submissions ExerciseSubmission[]
+
+  @@index([teacherId])
+}
+
+model AssignmentStudent {
+  id           String         @id @default(cuid())
+  assignmentId String
+  assignment   Assignment     @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+}
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  PASSED
+  FAILED
+}
+
+model ExerciseSubmission {
+  id            String           @id @default(cuid())
+  exerciseId    String
+  exercise      Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assignmentId  String?
+  assignment    Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  status        SubmissionStatus @default(IN_PROGRESS)
+  /// Percentage 0-100 of passed task points
+  score         Int              @default(0)
+  passedTasks   Int              @default(0)
+  totalTasks    Int              @default(0)
+  attempts      Int              @default(0)
+  results       Json             @default("[]")
+  /// Commands typed during the attempt (for teacher review)
+  commandLog    String[]         @default([])
+  hintsUsed     Int              @default(0)
+  startedAt     DateTime         @default(now())
+  lastCheckedAt DateTime?
+  completedAt   DateTime?
+  feedback      String?
+  reviewedById  String?
+  reviewedBy    User?            @relation("SubmissionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt    DateTime?
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([exerciseId, studentId])
+  @@index([studentId])
+  @@index([assignmentId])
+}
+
+// ---------------------------------------------------------------- quizzes
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_BLANK
+  MATCHING
+  PERMISSION
+  PREDICT_OUTPUT
+  PRACTICAL
+}
+
+model Quiz {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  title               String
+  description         String
+  moduleId            String?
+  module              LearningModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  timeLimitSec        Int?
+  questionsPerAttempt Int?
+  randomize           Boolean  @default(true)
+  passingScore        Int      @default(70)
+  xpReward            Int      @default(30)
+  isPublished         Boolean  @default(true)
+  authorId            String?
+  author              User?    @relation("QuizAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+}
+
+model QuizQuestion {
+  id          String       @id @default(cuid())
+  quizId      String
+  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type        QuestionType
+  prompt      String
+  /// Choices, matching pairs, practical setup... (safe to show)
+  options     Json         @default("{}")
+  /// Correct answer / grading checks. Never sent to the browser before grading.
+  answer      Json
+  explanation String?
+  points      Int          @default(1)
+  order       Int          @default(0)
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id           String         @id @default(cuid())
+  quizId       String
+  quiz         Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionIds  String[]
+  /// Shuffled option order per question, so grading maps back correctly
+  layout       Json           @default("{}")
+  answers      Json?
+  results      Json?
+  score        Int?
+  earnedPoints Int?
+  totalPoints  Int            @default(0)
+  passed       Boolean?
+  startedAt    DateTime       @default(now())
+  expiresAt    DateTime?
+  submittedAt  DateTime?
+
+  @@index([studentId, quizId])
+}
+
+// ---------------------------------------------------------------- progress & gamification
+
+enum ProgressStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model StudentProgress {
+  id          String         @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status      ProgressStatus @default(IN_PROGRESS)
+  startedAt   DateTime       @default(now())
+  completedAt DateTime?
+
+  @@unique([studentId, lessonId])
+  @@index([lessonId])
+}
+
+model StudentActivity {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  metadata  Json?
+  createdAt DateTime       @default(now())
+
+  @@index([studentId, createdAt])
+  @@index([type, createdAt])
+}
+
+model StudentXPTransaction {
+  id         String         @id @default(cuid())
+  studentId  String
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amount     Int
+  reason     String
+  /// lesson | challenge | quiz | daily | badge | assignment
+  sourceType String
+  sourceId   String
+  createdAt  DateTime       @default(now())
+
+  /// Idempotency: a reward can only be granted once per source
+  @@unique([studentId, sourceType, sourceId])
+  @@index([studentId, createdAt])
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String
+  /// Rule evaluated by the badge engine, e.g. { type: "module_completed", module: "file-permissions" }
+  criteria    Json
+  xpBonus     Int      @default(0)
+  order       Int      @default(0)
+
+  students StudentBadge[]
+}
+
+model StudentBadge {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge          @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt  DateTime       @default(now())
+
+  @@unique([studentId, badgeId])
+}
+
+// ---------------------------------------------------------------- virtual Linux environments
+
+enum EnvKind {
+  PLAYGROUND
+  CHALLENGE
+}
+
+model VirtualEnvironment {
+  id         String   @id @default(cuid())
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  kind       EnvKind  @default(PLAYGROUND)
+  /// "playground" or "challenge:<exerciseId>" — one environment per purpose
+  key        String
+  exerciseId String?
+  hostname   String   @default("linux-playground")
+  /// Optimistic concurrency version, incremented on every save
+  version    Int      @default(0)
+  /// Shell session, services, firewall, disks, network, logs...
+  meta       Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  files     VirtualFile[]
+  users     VirtualLinuxUser[]
+  groups    VirtualLinuxGroup[]
+  packages  InstalledPackage[]
+  processes SimulatedProcess[]
+  commands  CommandLog[]
+
+  @@unique([ownerId, key])
+}
+
+model VirtualFile {
+  environmentId String
+  environment   VirtualEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  /// Node id inside the environment
+  id            String
+  parentId      String?
+  name          String
+  path          String
+  /// file | dir | symlink | chardev | blockdev
+  type          String
+  content       String   @default("")
+  target        String?
+  ownerUid      Int
+  groupGid      Int
+  /// Permission bits (e.g. 0o755 = 493)
+  mode          Int
+  size          Int?
+  createdAt     DateTime
+  modifiedAt    DateTime
+
+  @@id([environmentId, id])
+  @@index([environmentId, path])
+  @@index([environmentId, parentId])
+}
+
+model VirtualLinuxUser {
+  environmentId String
+  environment   VirtualEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  username      String
+  uid           Int
+  gid           Int
+  gecos         String  @default("")
+  home          String
+  shell         String
+  /// Hashed (or ! / *) — never plain text
+  passwordHash  String
+  lastChange    Int
+  locked        Boolean @default(false)
+  position      Int     @default(0)
+
+  @@id([environmentId, username])
+}
+
+model VirtualLinuxGroup {
+  environmentId String
+  environment   VirtualEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  name          String
+  gid           Int
+  position      Int     @default(0)
+
+  members VirtualGroupMember[]
+
+  @@id([environmentId, name])
+}
+
+model VirtualGroupMember {
+  environmentId String
+  groupName     String
+  username      String
+  position      Int    @default(0)
+  group         VirtualLinuxGroup @relation(fields: [environmentId, groupName], references: [environmentId, name], onDelete: Cascade)
+
+  @@id([environmentId, groupName, username])
+}
+
+model InstalledPackage {
+  environmentId String
+  environment   VirtualEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  name          String
+  version       String
+  auto          Boolean  @default(false)
+  installedAt   DateTime
+
+  @@id([environmentId, name])
+}
+
+model SimulatedProcess {
+  environmentId String
+  environment   VirtualEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  pid           Int
+  ppid          Int
+  user          String
+  command       String
+  args          String
+  state         String
+  nice          Int      @default(0)
+  startedAt     DateTime
+  endsAt        DateTime?
+  tty           String
+  cpu           Float
+  mem           Float
+  vsz           Int
+  rss           Int
+  service       String?
+  kernel        Boolean  @default(false)
+
+  @@id([environmentId, pid])
+}
+
+model CommandLog {
+  id            String   @id @default(cuid())
+  environmentId String
+  environment   VirtualEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  userId        String
+  command       String
+  exitCode      Int
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([environmentId, createdAt])
+}
+
+// ---------------------------------------------------------------- platform
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
